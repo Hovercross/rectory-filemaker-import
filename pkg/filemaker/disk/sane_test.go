@@ -63,6 +63,46 @@ func Test_Sane(t *testing.T) {
 	}
 }
 
+func Test_BadMaxRepeat(t *testing.T) {
+	raw := getTestParsedData()
+
+	raw.Metadata.Fileds[0].MaxRepeat = "pie"
+
+	if _, err := raw.Sane(); err == nil {
+		t.Error("error was nil")
+	}
+}
+
+func Test_BadFound(t *testing.T) {
+	raw := getTestParsedData()
+
+	raw.ResultSet.Found = "pie"
+
+	if _, err := raw.Sane(); err == nil {
+		t.Error("error was nil")
+	}
+}
+
+func Test_BadDatabaseRecords(t *testing.T) {
+	raw := getTestParsedData()
+
+	raw.Database.Records = "pie"
+
+	if _, err := raw.Sane(); err == nil {
+		t.Error("error was nil")
+	}
+}
+
+func Test_BadEmptyOK(t *testing.T) {
+	raw := getTestParsedData()
+
+	raw.Metadata.Fileds[0].EmptyOK = "pie"
+
+	if _, err := raw.Sane(); err == nil {
+		t.Error("error was nil")
+	}
+}
+
 func getTestParsedData() *disk.File {
 	data := getSampleData()
 
