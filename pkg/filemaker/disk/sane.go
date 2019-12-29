@@ -12,10 +12,7 @@ func (f *File) Sane() (out *sane.Data, err error) {
 	out = &sane.Data{}
 
 	out.ErrorCode = f.ErrorCode
-
-	if out.Product, err = f.Product.Sane(); err != nil {
-		return
-	}
+	out.Product = f.Product.Sane()
 
 	if out.Database, err = f.Database.Sane(); err != nil {
 		return
@@ -33,14 +30,12 @@ func (f *File) Sane() (out *sane.Data, err error) {
 }
 
 // Sane the product
-func (p Product) Sane() (out *sane.Product, err error) {
-	out = &sane.Product{}
-
-	out.Build = p.Build
-	out.Name = p.Name
-	out.Version = p.Version
-
-	return
+func (p Product) Sane() *sane.Product {
+	return &sane.Product{
+		Build:   p.Build,
+		Name:    p.Name,
+		Version: p.Version,
+	}
 }
 
 // Sane the database
