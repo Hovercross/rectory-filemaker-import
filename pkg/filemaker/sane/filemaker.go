@@ -46,7 +46,7 @@ type ResultSet struct {
 
 // Row entity
 type Row struct {
-	ModID    int64
+	ModID    string
 	RecordID string
 	Cols     []*Col
 }

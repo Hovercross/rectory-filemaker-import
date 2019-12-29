@@ -41,7 +41,7 @@ func Test_Sane(t *testing.T) {
 			Found: 21689,
 			Rows: []*sane.Row{
 				&sane.Row{
-					ModID:    8,
+					ModID:    "8",
 					RecordID: "138",
 					Cols: []*sane.Col{
 						&sane.Col{
