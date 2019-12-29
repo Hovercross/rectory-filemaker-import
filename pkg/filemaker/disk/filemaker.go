@@ -1,15 +1,15 @@
-package filemaker
+package disk
 
 import "encoding/xml"
 
 // File is the outer master file format
 type File struct {
-	XMLName   xml.Name  `xml:"FMPXMLRESULT"`
-	ErrorCode int       `xml:"ERRORCODE"`
-	Product   Product   `xml:"PRODUCT"`
-	Database  Database  `xml:"DATABASE"`
-	Metadata  Metadata  `xml:"METADATA"`
-	ResultSet ResultSet `xml:"RESULTSET"`
+	XMLName   xml.Name   `xml:"FMPXMLRESULT"`
+	ErrorCode int64      `xml:"ERRORCODE"`
+	Product   *Product   `xml:"PRODUCT"`
+	Database  *Database  `xml:"DATABASE"`
+	Metadata  *Metadata  `xml:"METADATA"`
+	ResultSet *ResultSet `xml:"RESULTSET"`
 }
 
 // Product entity
@@ -33,7 +33,7 @@ type Database struct {
 // Metadata entity
 type Metadata struct {
 	XMLName xml.Name `xml:"METADATA"`
-	Fileds  []Field  `xml:"FIELD"`
+	Fileds  []*Field `xml:"FIELD"`
 }
 
 // Field entity
@@ -48,7 +48,7 @@ type Field struct {
 // ResultSet entity
 type ResultSet struct {
 	XMLName xml.Name `xml:"RESULTSET"`
-	Rows    []Row    `xml:"ROW"`
+	Rows    []*Row   `xml:"ROW"`
 	Found   string   `xml:"FOUND,attr"`
 }
 
@@ -57,7 +57,7 @@ type Row struct {
 	XMLName  xml.Name `xml:"ROW"`
 	ModID    string   `xml:"MODID,attr"`
 	RecordID string   `xml:"RECORDID,attr"`
-	Cols     []Col    `xml:"COL"`
+	Cols     []*Col   `xml:"COL"`
 }
 
 // Col entity
