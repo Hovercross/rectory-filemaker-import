@@ -13,19 +13,19 @@ func (f *File) Sane() (out *sane.Data, err error) {
 
 	out.ErrorCode = f.ErrorCode
 
-	if out.Product, err = f.Product.Sane(out); err != nil {
+	if out.Product, err = f.Product.Sane(); err != nil {
 		return
 	}
 
-	if out.Database, err = f.Database.Sane(out); err != nil {
+	if out.Database, err = f.Database.Sane(); err != nil {
 		return
 	}
 
-	if out.Metadata, err = f.Metadata.Sane(out); err != nil {
+	if out.Metadata, err = f.Metadata.Sane(); err != nil {
 		return
 	}
 
-	if out.ResultSet, err = f.ResultSet.Sane(out); err != nil {
+	if out.ResultSet, err = f.ResultSet.Sane(out.Metadata.Fields); err != nil {
 		return
 	}
 
@@ -33,7 +33,7 @@ func (f *File) Sane() (out *sane.Data, err error) {
 }
 
 // Sane the product
-func (p Product) Sane(parent *sane.Data) (out *sane.Product, err error) {
+func (p Product) Sane() (out *sane.Product, err error) {
 	out = &sane.Product{}
 
 	out.Build = p.Build
@@ -44,7 +44,7 @@ func (p Product) Sane(parent *sane.Data) (out *sane.Product, err error) {
 }
 
 // Sane the database
-func (d Database) Sane(parent *sane.Data) (out *sane.Database, err error) {
+func (d Database) Sane() (out *sane.Database, err error) {
 	out = &sane.Database{}
 
 	out.DateFormat = d.DateFormat
@@ -60,13 +60,13 @@ func (d Database) Sane(parent *sane.Data) (out *sane.Database, err error) {
 }
 
 // Sane the metadata
-func (m Metadata) Sane(parent *sane.Data) (out *sane.Metadata, err error) {
+func (m Metadata) Sane() (out *sane.Metadata, err error) {
 	out = &sane.Metadata{}
 
 	out.Fields = make([]*sane.Field, len(m.Fileds))
 
 	for i, field := range m.Fileds {
-		if out.Fields[i], err = field.Sane(out); err != nil {
+		if out.Fields[i], err = field.Sane(); err != nil {
 			out = nil
 			return
 		}
@@ -76,12 +76,25 @@ func (m Metadata) Sane(parent *sane.Data) (out *sane.Metadata, err error) {
 }
 
 // Sane the result set
-func (rs ResultSet) Sane(parent *sane.Data) (out *sane.ResultSet, err error) {
+func (rs ResultSet) Sane(fields []*sane.Field) (out *sane.ResultSet, err error) {
+	out = &sane.ResultSet{}
+
+	if out.Found, err = strconv.ParseInt(rs.Found, 10, 64); err != nil {
+		out = nil
+		return
+	}
+
+	out.Rows = make([]*sane.Row, len(rs.Rows))
+
+	for i, row := range rs.Rows {
+		out.Rows[i] = row.Sane(fields)
+	}
+
 	return
 }
 
 // Sane gives back the sane version of the field
-func (f Field) Sane(parent *sane.Metadata) (out *sane.Field, err error) {
+func (f Field) Sane() (out *sane.Field, err error) {
 	out = &sane.Field{}
 
 	switch f.EmptyOK {
@@ -104,4 +117,32 @@ func (f Field) Sane(parent *sane.Metadata) (out *sane.Field, err error) {
 	out.Type = f.Type
 
 	return
+}
+
+// Sane the row
+func (r Row) Sane(fields []*sane.Field) *sane.Row {
+	out := &sane.Row{}
+
+	out.ModID = r.ModID
+	out.RecordID = r.RecordID
+
+	out.Cols = make([]*sane.Col, len(r.Cols))
+
+	for i, col := range r.Cols {
+		field := fields[i]
+		out.Cols[i] = col.Sane(field)
+	}
+
+	return out
+}
+
+// Sane the column
+func (c Col) Sane(field *sane.Field) *sane.Col {
+	out := &sane.Col{
+		Field: field,
+		Data:  make([]string, len(c.Data)),
+	}
+
+	copy(out.Data, c.Data)
+	return out
 }
