@@ -2,6 +2,7 @@ package sane
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/hovercross/rectory-filemaker-import/pkg/filemaker/timeconv"
 )
@@ -100,4 +101,47 @@ func (c *Col) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(c.Data)
+}
+
+// ToInterface will parse the thing into a generic version, acceptabe for processing
+func (c *Col) ToInterface() (interface{}, error) {
+	// Non-repeated dates become the ISO8601 date, since Go doesn't have a plain date type
+	if c.Field.MaxRepeat == 1 && c.Field.Type == "DATE" {
+		s, err := c.parent.DateStringParser(c.Data[0])
+
+		if err != nil {
+			return nil, err
+		}
+
+		return s, nil
+	}
+
+	// Repeated dates become an array of ISO8601 dates
+	if c.Field.Type == "DATE" {
+		out := make([]string, len(c.Data))
+
+		for i, rawValue := range c.Data {
+			s, err := c.parent.DateStringParser(rawValue)
+
+			if err != nil {
+				return nil, err
+			}
+
+			out[i] = s
+		}
+
+		return out, nil
+	}
+
+	// Non-repeated text becomes a straight string
+	if c.Field.MaxRepeat == 1 && c.Field.Type == "TEXT" {
+		return c.Data[0], nil
+	}
+
+	// Repeated text is as is
+	if c.Field.Type == "TEXT" {
+		return c.Data, nil
+	}
+
+	return nil, fmt.Errorf("Unknown field type: %s", c.Field.Type)
 }
