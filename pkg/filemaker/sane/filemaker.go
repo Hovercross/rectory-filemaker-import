@@ -1,8 +1,8 @@
 package sane
 
 import (
-	"encoding/json"
 	"fmt"
+	"reflect"
 
 	"github.com/hovercross/rectory-filemaker-import/pkg/filemaker/timeconv"
 )
@@ -74,94 +74,38 @@ func (c *Col) RegisterParent(d *Data) {
 	c.parent = d
 }
 
-// MarshalJSON will handle dates and times at least
-func (c *Col) MarshalJSON() ([]byte, error) {
-	if c.Field.MaxRepeat == 1 && c.Field.Type == "DATE" {
-		s, err := c.parent.DateStringParser(c.Data[0])
+// ImposeOnto will push the vaues onto a struct by tag
+func (c *Col) ImposeOnto(v interface{}) error {
+	t := reflect.TypeOf(v)
 
-		if err != nil {
-			return nil, err
+	if t.Kind() != reflect.Ptr {
+		return fmt.Errorf("value must be a pointer")
+	}
+
+	elem := reflect.ValueOf(v).Elem()
+	elemType := elem.Type()
+
+	for i := 0; i < elemType.NumField(); i++ {
+		field := elemType.Field(i)
+		fmTag := field.Tag.Get("filemaker")
+
+		if fmTag != "" && fmTag == c.Field.Name {
+			c.impose(elem, i)
 		}
-
-		return []byte(s), nil
 	}
 
-	if c.Field.MaxRepeat == 1 && c.Field.Type == "TIME" {
-		s, err := c.parent.TimeStringParser(c.Data[0])
-
-		if err != nil {
-			return nil, err
-		}
-
-		return []byte(s), nil
-	}
-
-	if c.Field.MaxRepeat == 1 {
-		return json.Marshal(c.Data[0])
-	}
-
-	return json.Marshal(c.Data)
+	return nil
 }
 
-// ToInterface will parse the thing into a generic version, acceptabe for processing
-func (c *Col) ToInterface() (interface{}, error) {
-	// Non-repeated dates become the ISO8601 date, since Go doesn't have a plain date type
-	if c.Field.MaxRepeat == 1 && c.Field.Type == "DATE" {
-		s, err := c.parent.DateStringParser(c.Data[0])
+func (c *Col) impose(elem reflect.Value, i int) error {
+	// Now, we want to set it
 
-		if err != nil {
-			return nil, err
-		}
+	field := elem.Type().Field(i)
 
-		return s, nil
+	if field.Type.Kind() == reflect.String && c.Field.Type == "TEXT" && c.Field.MaxRepeat == 1 {
+		elem.Field(i).SetString(c.Data[0])
+		return nil
 	}
 
-	// Repeated dates become an array of ISO8601 dates
-	if c.Field.Type == "DATE" {
-		out := make([]string, len(c.Data))
-
-		for i, rawValue := range c.Data {
-			s, err := c.parent.DateStringParser(rawValue)
-
-			if err != nil {
-				return nil, err
-			}
-
-			out[i] = s
-		}
-
-		return out, nil
-	}
-
-	// Non-repeated text becomes a straight string
-	if c.Field.MaxRepeat == 1 && c.Field.Type == "TEXT" {
-		return c.Data[0], nil
-	}
-
-	// Repeated text is as is
-	if c.Field.Type == "TEXT" {
-		return c.Data, nil
-	}
-
-	return nil, fmt.Errorf("Unknown field type: %s", c.Field.Type)
-}
-
-// ToMap converts a row into a map[string]interface{} for generic handling
-func (r *Row) ToMap() (map[string]interface{}, error) {
-	out := map[string]interface{}{}
-
-	for _, c := range r.Cols {
-		val, err := c.ToInterface()
-
-		if err != nil {
-			return nil, err
-		}
-
-		out[c.Field.Name] = val
-	}
-
-	out["_recordID"] = r.RecordID
-	out["_modID"] = r.ModID
-
-	return out, nil
+	return fmt.Errorf("Didn't know what to do with it")
 }
