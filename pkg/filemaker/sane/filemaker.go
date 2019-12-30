@@ -145,3 +145,23 @@ func (c *Col) ToInterface() (interface{}, error) {
 
 	return nil, fmt.Errorf("Unknown field type: %s", c.Field.Type)
 }
+
+// ToMap converts a row into a map[string]interface{} for generic handling
+func (r *Row) ToMap() (map[string]interface{}, error) {
+	out := map[string]interface{}{}
+
+	for _, c := range r.Cols {
+		val, err := c.ToInterface()
+
+		if err != nil {
+			return nil, err
+		}
+
+		out[c.Field.Name] = val
+	}
+
+	out["_recordID"] = r.RecordID
+	out["_modID"] = r.ModID
+
+	return out, nil
+}
