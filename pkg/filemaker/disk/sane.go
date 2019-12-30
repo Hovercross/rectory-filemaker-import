@@ -22,7 +22,7 @@ func (f *File) Sane() (out *sane.Data, err error) {
 		return
 	}
 
-	if out.ResultSet, err = f.ResultSet.Sane(out.Metadata.Fields); err != nil {
+	if out.ResultSet, err = f.ResultSet.Sane(out); err != nil {
 		return
 	}
 
@@ -30,7 +30,7 @@ func (f *File) Sane() (out *sane.Data, err error) {
 }
 
 // Sane the product
-func (p Product) Sane() *sane.Product {
+func (p *Product) Sane() *sane.Product {
 	return &sane.Product{
 		Build:   p.Build,
 		Name:    p.Name,
@@ -39,7 +39,7 @@ func (p Product) Sane() *sane.Product {
 }
 
 // Sane the database
-func (d Database) Sane() (out *sane.Database, err error) {
+func (d *Database) Sane() (out *sane.Database, err error) {
 	out = &sane.Database{}
 
 	out.DateFormat = d.DateFormat
@@ -55,7 +55,7 @@ func (d Database) Sane() (out *sane.Database, err error) {
 }
 
 // Sane the metadata
-func (m Metadata) Sane() (out *sane.Metadata, err error) {
+func (m *Metadata) Sane() (out *sane.Metadata, err error) {
 	out = &sane.Metadata{}
 
 	out.Fields = make([]*sane.Field, len(m.Fileds))
@@ -71,7 +71,7 @@ func (m Metadata) Sane() (out *sane.Metadata, err error) {
 }
 
 // Sane the result set
-func (rs ResultSet) Sane(fields []*sane.Field) (out *sane.ResultSet, err error) {
+func (rs *ResultSet) Sane(d *sane.Data) (out *sane.ResultSet, err error) {
 	out = &sane.ResultSet{}
 
 	if out.Found, err = strconv.ParseInt(rs.Found, 10, 64); err != nil {
@@ -82,14 +82,14 @@ func (rs ResultSet) Sane(fields []*sane.Field) (out *sane.ResultSet, err error) 
 	out.Rows = make([]*sane.Row, len(rs.Rows))
 
 	for i, row := range rs.Rows {
-		out.Rows[i] = row.Sane(fields)
+		out.Rows[i] = row.Sane(d)
 	}
 
 	return
 }
 
 // Sane gives back the sane version of the field
-func (f Field) Sane() (out *sane.Field, err error) {
+func (f *Field) Sane() (out *sane.Field, err error) {
 	out = &sane.Field{}
 
 	switch f.EmptyOK {
@@ -115,7 +115,7 @@ func (f Field) Sane() (out *sane.Field, err error) {
 }
 
 // Sane the row
-func (r Row) Sane(fields []*sane.Field) *sane.Row {
+func (r *Row) Sane(d *sane.Data) *sane.Row {
 	out := &sane.Row{}
 
 	out.ModID = r.ModID
@@ -124,15 +124,15 @@ func (r Row) Sane(fields []*sane.Field) *sane.Row {
 	out.Cols = make([]*sane.Col, len(r.Cols))
 
 	for i, col := range r.Cols {
-		field := fields[i]
-		out.Cols[i] = col.Sane(field)
+		field := d.Metadata.Fields[i]
+		out.Cols[i] = col.Sane(field, d)
 	}
 
 	return out
 }
 
 // Sane the column
-func (c Col) Sane(field *sane.Field) *sane.Col {
+func (c *Col) Sane(field *sane.Field, d *sane.Data) *sane.Col {
 	out := &sane.Col{
 		Field: field,
 		Data:  make([]string, len(c.Data)),
